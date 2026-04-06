@@ -1,0 +1,81 @@
+services:
+
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8000"
+    volumes:
+      - ./backend:/app
+      - uploads:/app/uploads
+      - models:/app/models_cache
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./meetmind.db
+      - REDIS_URL=redis://redis:6379
+      - WHISPER_MODEL=small
+      - WHISPER_COMPUTE=float16
+      - WHISPER_DEVICE=cuda
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3
+      - HF_TOKEN=${HF_TOKEN:-}
+      - UPLOAD_DIR=/app/uploads
+    depends_on:
+      - redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # ── Ollama (local LLM) ─────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  uploads:
+  models:
+  redis_data:
+  ollama_data:
