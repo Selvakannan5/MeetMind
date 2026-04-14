@@ -1,0 +1,32 @@
+# Build and Dependency Directories
+node_modules/
+dist/
+build/
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project Specific
+backend/uploads/
+artifacts/
+temp/
+outputs/
+*.log
+MeetMind T&S .pdf
+
+# OS Files
+.DS_Store
+Thumbs.db
